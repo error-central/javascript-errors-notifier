@@ -30,13 +30,6 @@ new function () {
 
 	function showErrorNotification(popupUrl) {
 		console.log('🔵 Loading.')
-		// debugger;
-
-		// // Opens line 34 of file https://example.com/test.js, assuming this resource is present:
-		// chrome.devtools.panels.openResource("https://example.com/test.js", 33, function () {
-		// 	// Resource should be open, but no way to test that it succeeded
-		// });
-
 
 		if (options.showPopup) {
 			showPopup(popupUrl);
@@ -45,7 +38,7 @@ new function () {
 		if (!icon && (options.showIcon || options.showPopup)) {
 			icon = document.createElement('img');
 			icon.src = chrome.extension.getURL('img/error_38.png');
-			icon.title = 'XX Some errors occurred on this page. Click to see details.';
+			icon.title = 'Some errors occurred on this page. Click to see details.';
 			icon.style.cssText = 'position: fixed !important; bottom: 10px !important; right: 10px !important; cursor: pointer !important; z-index: 2147483647 !important; width: 38px !important; height: 38px !important; min-height: 38px !important; min-width: 38px !important; max-height: 38px !important; max-width: 38px !important;';
 			icon.onclick = function () {
 				if (!popup) {
@@ -94,18 +87,50 @@ new function () {
 	}
 
 	document.addEventListener('ErrorToExtension', function (e) {
-		var error = e.detail;
+		const error = e.detail;
 
-		// Stan
-		console.info(`🔵 Error was caught.`)
-		const soQueryTemplate = "https://api.stackexchange.com/2.2/search/advanced?order=desc&sort=relevance&answers=1&filter=withbody&site=stackoverflow&q=";
-		var req = new XMLHttpRequest();
-		req.open('GET', soQueryTemplate + error.text);
-		req.onload = function () {
-			console.log(`Got so response: ${req.responseText}`)
-			alert(req.responseText);
+		// Stan - EC
+		console.info(`🔵 Error was caught: ${error.text}`)
+
+		// Search Stack Overflow
+		const soQueryTemplate = 'https://api.stackexchange.com/2.2/search/advanced?order=desc&sort=relevance&answers=1&filter=withbody&site=stackoverflow&q=';
+		let soReq = new XMLHttpRequest();
+		soReq.open('GET', soQueryTemplate + encodeURIComponent(error.text));
+		soReq.onload = function () {
+			soResponse = JSON.parse(soReq.responseText)
+			console.info(`1️⃣ Got SO response:`, soResponse)
 		};
-		req.send();
+		soReq.send();
+
+		// Search Github Issues
+		const githubQueryTemplate = 'https://api.github.com/search/issues?sort=updated-desc&q=type:issue+repo:error-central/error-central+';
+		let githubReq = new XMLHttpRequest();
+		githubReq.open('GET', githubQueryTemplate + encodeURIComponent(error.text));
+		githubReq.onload = function () {
+			githubResponse = JSON.parse(githubReq.responseText)
+			console.info(`2️⃣ Got Github response:`, githubResponse)
+		};
+		githubReq.send();
+
+		// Post to our server
+		params = JSON.stringify({
+			"sessionId": 0,
+			"userName": "chrome",
+			"blobId": null,
+			"date": new Date().toJSON(),
+			"language": "javascript",
+			"title": error.text,
+			"rawText": error.text,
+		});
+		let ecPostReq = new XMLHttpRequest();
+		ecPostReq.open('POST', 'http://wanderingstan.com/ec/ec-monitor.php', true);
+		ecPostReq.onreadystatechange = function () {
+			if (ecPostReq.readyState == 4 && ecPostReq.status == 200) {
+				// Error was logged
+				//console.info(`3️⃣ Got wanderingstan response X:`, ecPostReq.responseText)
+			}
+		}
+		ecPostReq.send(params);
 
 		if (isIFrame) {
 			window.top.postMessage({
