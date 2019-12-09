@@ -1,7 +1,7 @@
 var switchersStates = {};
 
 function copyToClipboard(str) {
-	document.oncopy = function(event) {
+	document.oncopy = function (event) {
 		event.clipboardData.setData('text/plain', str);
 		event.preventDefault();
 	};
@@ -11,14 +11,14 @@ function copyToClipboard(str) {
 function initOptionSwitcher(imgNode, domainOption, globalOption, srcValues) {
 	switchersStates[domainOption] = domainOption in localStorage ? +localStorage[domainOption] : (localStorage[globalOption] ? 1 : 0);
 	imgNode.src = srcValues[switchersStates[domainOption]];
-	imgNode.onclick = function() {
+	imgNode.onclick = function () {
 		switchersStates[domainOption] = +!switchersStates[domainOption];
 		localStorage[domainOption] = switchersStates[domainOption] ? 1 : '';
 		imgNode.src = srcValues[switchersStates[domainOption]];
 	};
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 	var errorsNode = document.getElementById('errors');
 	var copyNode = document.getElementById('copy');
 	var clearNode = document.getElementById('clear');
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		'img/popup_on.png'
 	]);
 
-	if(!request.errors) {
+	if (!request.errors) {
 		errorsNode.innerHTML = '<p style="padding: 20px">There are no errors on this page :)</p>';
 		copyNode.remove();
 		clearNode.remove();
@@ -45,19 +45,19 @@ document.addEventListener('DOMContentLoaded', function() {
 	else {
 		errorsNode.innerHTML = request.errors;
 
-		clearNode.onclick = function() {
+		clearNode.onclick = function () {
 			closePopup(isIFrame);
 		};
 
-		copyNode.onclick = function() {
+		copyNode.onclick = function () {
 			var isWindows = navigator.appVersion.indexOf('Windows') != -1;
 			copyToClipboard(request.errors.replace(/<br\/>/g, isWindows ? '\r\n' : '\n').replace(/<.*?>/g, ''));
 			closePopup();
 		};
 	}
 
-	window.addEventListener('message', function(event) {
-		if(typeof event.data == 'object' && event.data._reloadPopup) {
+	window.addEventListener('message', function (event) {
+		if (typeof event.data == 'object' && event.data._reloadPopup) {
 			request = parseUrl(event.data.url);
 			errorsNode.innerHTML = request.errors;
 			setTimeout(autoSize, 100);
