@@ -29,7 +29,6 @@ new function () {
 	}
 
 	function showErrorNotification(popupUrl) {
-		console.log('🔵 Loading.')
 
 		if (options.showPopup) {
 			showPopup(popupUrl);
@@ -90,25 +89,26 @@ new function () {
 		const error = e.detail;
 
 		// Stan - EC
-		console.info(`🔵 Error was caught: ${error.text}`)
+		console.info(`🐛 Error was caught: ${error.text}`)
 
 		// Search Stack Overflow
-		const soQueryTemplate = 'https://api.stackexchange.com/2.2/search/advanced?order=desc&sort=relevance&answers=1&filter=withbody&site=stackoverflow&q=';
+		const soQueryUrl = `https://api.stackexchange.com/2.2/search/advanced?order=desc&sort=relevance&answers=1&filter=withbody&site=stackoverflow&q=${encodeURIComponent(error.text)}`;
 		let soReq = new XMLHttpRequest();
-		soReq.open('GET', soQueryTemplate + encodeURIComponent(error.text));
+		soReq.open('GET', soQueryUrl);
 		soReq.onload = function () {
 			soResponse = JSON.parse(soReq.responseText)
-			console.info(`1️⃣ Got SO response:`, soResponse)
+			console.info(`1️⃣ SO results for '${error.text}':`, soResponse)
 		};
 		soReq.send();
 
 		// Search Github Issues
-		const githubQueryTemplate = 'https://api.github.com/search/issues?sort=updated-desc&q=type:issue+repo:error-central/error-central+';
+		const repo = `error-central/error-central`; // Hard-coded for now
+		const githubQueryUrl = `https://api.github.com/search/issues?sort=updated-desc&q=type:issue+repo:${repo}+${encodeURIComponent(error.text)}`;
 		let githubReq = new XMLHttpRequest();
-		githubReq.open('GET', githubQueryTemplate + encodeURIComponent(error.text));
+		githubReq.open('GET', githubQueryUrl);
 		githubReq.onload = function () {
 			githubResponse = JSON.parse(githubReq.responseText)
-			console.info(`2️⃣ Got Github response:`, githubResponse)
+			console.info(`2️⃣ Github results for '${error.text}':`, githubResponse)
 		};
 		githubReq.send();
 
