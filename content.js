@@ -8,6 +8,7 @@ new function () {
 	var popup;
 	var options;
 	var isIFrame = window.top != window;
+	var useCache = true;
 
 	function showPopup(popupUrl) {
 
@@ -85,33 +86,71 @@ new function () {
 		}
 	}
 
+	/**
+	 * Search Stack Overflow
+	 * @param {*} error
+	 */
 	function searchSo(error) {
-		// Search Stack Overflow
-		const soQueryUrl = `https://api.stackexchange.com/2.2/search/advanced?order=desc&sort=relevance&answers=1&filter=withbody&site=stackoverflow&q=${encodeURIComponent(error.text)}`;
-		let soReq = new XMLHttpRequest();
-		soReq.open('GET', soQueryUrl);
-		soReq.onload = function () {
-			soResponse = JSON.parse(soReq.responseText)
-			console.info(`1️⃣ SO results for '${error.text}':`, soResponse)
+		const handler = (r) => {
+			soResponse = JSON.parse(r)
+			console.info(`🐛 SO results for '${error.text}':`, soResponse)
 		};
-		soReq.send();
+		let r = window.localStorage.getItem(`so:${error.text}`)
+		if (r && useCache) {
+			// Cache hit
+			// console.info('cache hit')
+			handler(r)
+		}
+		else {
+			// No cache hit
+			const soQueryUrl = `https://api.stackexchange.com/2.2/search/advanced?order=desc&sort=relevance&answers=1&filter=withbody&site=stackoverflow&q=${encodeURIComponent(error.text)}`;
+			let soReq = new XMLHttpRequest();
+			soReq.open('GET', soQueryUrl);
+			soReq.onload = () => {
+				window.localStorage.setItem( // Cache
+					`so:${error.text}`, soReq.responseText);
+				handler(soResponse);
+			};
+			soReq.send();
+		}
 	}
 
+	/**
+	 * Search Github Issues
+	 * @param {*} error
+	 */
 	function searchGithub(error) {
-		// Search Github Issues
-		const repo = `error-central/error-central`; // Hard-coded for now
-		const githubQueryUrl = `https://api.github.com/search/issues?sort=updated-desc&q=type:issue+repo:${repo}+${encodeURIComponent(error.text)}`;
-		let githubReq = new XMLHttpRequest();
-		githubReq.open('GET', githubQueryUrl);
-		githubReq.onload = function () {
-			githubResponse = JSON.parse(githubReq.responseText)
-			console.info(`2️⃣ Github results for '${error.text}':`, githubResponse)
-		};
-		githubReq.send();
+		const handler = (r) => {
+			let githubResponse = JSON.parse(r)
+			console.info(`🐛 Github results for '${error.text}':`, githubResponse)
+		}
+		let r = window.localStorage.getItem(`github:${error.text}`)
+		if (r && useCache) {
+			// Cache hit
+			// console.info('cache hit')
+			handler(r);
+		}
+		else {
+			// No cache hit, do it
+			const repo = `error-central/error-central`; // Hard-coded for now
+			const githubQueryUrl = `https://api.github.com/search/issues?sort=updated-desc&q=type:issue+repo:${repo}+${encodeURIComponent(error.text)}`;
+			let githubReq = new XMLHttpRequest();
+			githubReq.open('GET', githubQueryUrl);
+			githubReq.onload = () => {
+				window.localStorage.setItem( // Cache
+					`github:${error.text}`,
+					githubReq.responseText);
+				handler(githubReq.responseText);
+			};
+			githubReq.send();
+		}
 	}
 
+	/**
+	 * Post to our server
+	 * @param {*} error
+	 */
 	function postError(error) {
-		// Post to our server
 		params = JSON.stringify({
 			"sessionId": 0,
 			"userName": "chrome",
@@ -121,14 +160,15 @@ new function () {
 			"title": error.text,
 			"rawText": error.text,
 		});
-		let ecPostReq = new XMLHttpRequest();
-		ecPostReq.open('POST', 'http://wanderingstan.com/ec/ec-monitor.php', true);
-		ecPostReq.onreadystatechange = function () {
+		handler = () => {
 			if (ecPostReq.readyState == 4 && ecPostReq.status == 200) {
 				// Error was logged
-				//console.info(`3️⃣ Got wanderingstan response X:`, ecPostReq.responseText)
+				// console.info(`3️⃣ Got wanderingstan response X:`, ecPostReq.responseText)
 			}
 		}
+		let ecPostReq = new XMLHttpRequest();
+		ecPostReq.open('POST', 'http://wanderingstan.com/ec/ec-monitor.php', true);
+		ecPostReq.onreadystatechange = handler;
 		ecPostReq.send(params);
 	}
 
@@ -137,7 +177,7 @@ new function () {
 		const error = e.detail;
 
 		// Stan - EC
-		console.info(`🐛 Error was caught: ${error.text}`)
+		// console.info(`🐛 Error was caught: ${error.text}`)
 		searchSo(error);
 		searchGithub(error);
 		postError(error);
