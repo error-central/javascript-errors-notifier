@@ -85,12 +85,7 @@ new function () {
 		}
 	}
 
-	document.addEventListener('ErrorToExtension', function (e) {
-		const error = e.detail;
-
-		// Stan - EC
-		console.info(`🐛 Error was caught: ${error.text}`)
-
+	function searchSo(error) {
 		// Search Stack Overflow
 		const soQueryUrl = `https://api.stackexchange.com/2.2/search/advanced?order=desc&sort=relevance&answers=1&filter=withbody&site=stackoverflow&q=${encodeURIComponent(error.text)}`;
 		let soReq = new XMLHttpRequest();
@@ -100,7 +95,9 @@ new function () {
 			console.info(`1️⃣ SO results for '${error.text}':`, soResponse)
 		};
 		soReq.send();
+	}
 
+	function searchGithub(error) {
 		// Search Github Issues
 		const repo = `error-central/error-central`; // Hard-coded for now
 		const githubQueryUrl = `https://api.github.com/search/issues?sort=updated-desc&q=type:issue+repo:${repo}+${encodeURIComponent(error.text)}`;
@@ -111,7 +108,9 @@ new function () {
 			console.info(`2️⃣ Github results for '${error.text}':`, githubResponse)
 		};
 		githubReq.send();
+	}
 
+	function postError(error) {
 		// Post to our server
 		params = JSON.stringify({
 			"sessionId": 0,
@@ -131,6 +130,17 @@ new function () {
 			}
 		}
 		ecPostReq.send(params);
+	}
+
+
+	document.addEventListener('ErrorToExtension', function (e) {
+		const error = e.detail;
+
+		// Stan - EC
+		console.info(`🐛 Error was caught: ${error.text}`)
+		searchSo(error);
+		searchGithub(error);
+		postError(error);
 
 		if (isIFrame) {
 			window.top.postMessage({
