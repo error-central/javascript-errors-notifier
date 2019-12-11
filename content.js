@@ -97,7 +97,9 @@ new function () {
 				return;
 			}
 			// Format SO
-			console.groupCollapsed(`🐛 ${soResponse.items.length} SO results for '${error.text}':`)
+			console.groupCollapsed(
+				`%c🐛 ${soResponse.items.length} Stack Overflow results for '${error.text}'`,
+				'color: #fc212e; background-color: #fff0f0')
 			for (const i of soResponse.items.slice(0, 10)) {
 				console.groupCollapsed(
 					`%c${i.title} (${i.answer_count} answers)\n${i.link}`,
@@ -142,7 +144,9 @@ new function () {
 				return;
 			}
 			// Format Github
-			console.groupCollapsed(`🐛 ${githubResponse.items.length} Github results for '${error.text}':`)
+			console.groupCollapsed(
+				`%c🐛 ${githubResponse.items.length} Github results for '${error.text}'`,
+				'color: #fc212e; background-color: #fff0f0')
 			for (const i of githubResponse.items.slice(0, 10)) {
 				console.groupCollapsed(
 					`%c${i.title}\n${i.html_url} `,
