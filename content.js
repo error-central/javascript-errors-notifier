@@ -93,12 +93,27 @@ new function () {
 	function searchSo(error) {
 		const handler = (r) => {
 			soResponse = JSON.parse(r)
-			console.info(`🐛 SO results for '${error.text}':`, soResponse)
+			if (soResponse.items.length == 0) {
+				return;
+			}
+			// Format SO
+			console.groupCollapsed(`🐛 ${soResponse.items.length} SO results for '${error.text}':`)
+			for (const i of soResponse.items.slice(0, 10)) {
+				console.groupCollapsed(
+					`%c${i.title} (${i.answer_count} answers)\n${i.link}`,
+					'color: green; font-size: 10px')
+				console.log(i.body)
+				console.groupEnd()
+			}
+			if (soResponse.items.length > 10) {
+				console.log(`${soResponse.items.length - 10} more...`);
+			}
+			console.groupEnd()
 		};
 		let r = window.localStorage.getItem(`so:${error.text}`)
 		if (r && useCache) {
 			// Cache hit
-			// console.info('cache hit')
+			// console.info('SO cache hit')
 			handler(r)
 		}
 		else {
@@ -120,19 +135,34 @@ new function () {
 	 * @param {*} error
 	 */
 	function searchGithub(error) {
+		const repo = `error-central/error-central`; // Hard-coded for now
 		const handler = (r) => {
 			let githubResponse = JSON.parse(r)
-			console.info(`🐛 Github results for '${error.text}':`, githubResponse)
+			if (githubResponse.items.length == 0) {
+				return;
+			}
+			// Format Github
+			console.groupCollapsed(`🐛 ${githubResponse.items.length} Github results for '${error.text}':`)
+			for (const i of githubResponse.items.slice(0, 10)) {
+				console.groupCollapsed(
+					`%c${i.title}\n${i.html_url} `,
+					'color: green; font-size: 10px')
+				console.log(i.body)
+				console.groupEnd()
+			}
+			if (githubResponse.items.length > 10) {
+				console.log(`${githubResponse.items.length - 10} more...`);
+			}
+			console.groupEnd()
 		}
 		let r = window.localStorage.getItem(`github:${error.text}`)
 		if (r && useCache) {
 			// Cache hit
-			// console.info('cache hit')
+			// console.info('github cache hit')
 			handler(r);
 		}
 		else {
 			// No cache hit, do it
-			const repo = `error-central/error-central`; // Hard-coded for now
 			const githubQueryUrl = `https://api.github.com/search/issues?sort=updated-desc&q=type:issue+repo:${repo}+${encodeURIComponent(error.text)}`;
 			let githubReq = new XMLHttpRequest();
 			githubReq.open('GET', githubQueryUrl);
