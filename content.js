@@ -181,6 +181,51 @@ new function () {
 	}
 
 	/**
+	 * Search Github Issues
+	 * @param {*} error
+	 */
+	function searchEc(error) {
+		const handler = (r) => {
+			let ecResponse = JSON.parse(r)
+			if (ecResponse.length == 0) {
+				return;
+			}
+			// Format
+			console.groupCollapsed(
+				`%c🐛 ${ecResponse.length} Error Central results for '${error.text}'`,
+				'color: #fc212e; background-color: #fff0f0')
+			for (const i of ecResponse.slice(0, 10)) {
+				// TODO: Do some analysis; here or on server. Who's getting the error?
+				// When? Maybe do a sparkline: https://rosettacode.org/wiki/Sparkline_in_unicode#JavaScript
+				console.log(i)
+			}
+			if (ecResponse.length > 10) {
+				console.log(`${ecResponse.length - 10} more...`);
+			}
+			console.groupEnd()
+		}
+		let r = window.localStorage.getItem(`ec:${error.text}`)
+		if (r && useCache) {
+			// Cache hit
+			console.info('ec cache hit')
+			handler(r);
+		}
+		else {
+			// No cache hit, do it
+			const ecQueryUrl = `http://wanderingstan.com/ec/ec-search.php?q=${encodeURIComponent(error.text)}`;
+			let ecReq = new XMLHttpRequest();
+			ecReq.open('GET', ecQueryUrl);
+			ecReq.onload = () => {
+				window.localStorage.setItem( // Cache
+					`ec:${error.text}`,
+					ecReq.responseText);
+				handler(ecReq.responseText);
+			};
+			ecReq.send();
+		}
+	}
+
+	/**
 	 * Post to our server
 	 * @param {*} error
 	 */
@@ -214,6 +259,7 @@ new function () {
 		// console.info(`🐛 Error was caught: ${error.text}`)
 		searchSo(error);
 		searchGithub(error);
+		searchEc(error);
 		postError(error);
 
 		if (isIFrame) {
