@@ -103,7 +103,7 @@ new function () {
 			for (const i of soResponse.items.slice(0, 10)) {
 				console.groupCollapsed(
 					`%c${i.title} (${i.answer_count} answers)\n${i.link}`,
-					'color: green; font-size: 10px')
+					'color: green; font-size: 12px; font-family: Arial,"Helvetica Neue",Helvetica,sans-serif')
 				console.log(i.body)
 				console.groupEnd()
 			}
@@ -193,19 +193,22 @@ new function () {
 			// Format
 			console.groupCollapsed(
 				`%c🐛 ${ecResponse.length} Error Central results for '${error.text}'`,
-				'color: #fc212e; background-color: #fff0f0')
-			for (const i of ecResponse.slice(0, 10)) {
-				// TODO: Do some analysis; here or on server. Who's getting the error?
-				// When? Maybe do a sparkline: https://rosettacode.org/wiki/Sparkline_in_unicode#JavaScript
-				console.log(i)
-			}
-			if (ecResponse.length > 10) {
-				console.log(`${ecResponse.length - 10} more...`);
-			}
+				'color: #fc212e; background-color: #fff0f0');
+			console.table(ecResponse);
+			// for (const i of ecResponse.slice(0, 10)) {
+			// 	// TODO: Do some analysis; here or on server. Who's getting the error?
+			// 	// When? Maybe do a sparkline:
+			// 	// https://rosettacode.org/wiki/Sparkline_in_unicode#JavaScript
+			// 	console.log(`${i.userName} ${i.count} ${i.latest} ${i.days_ago}`)
+			// }
+			// if (ecResponse.length > 10) {
+			// 	console.log(`${ecResponse.length - 10} more...`);
+			// }
 			console.groupEnd()
 		}
 		let r = window.localStorage.getItem(`ec:${error.text}`)
-		if (r && useCache) {
+		// if (r && useCache) {
+		if (false && r && useCache) {
 			// Cache hit
 			console.info('ec cache hit')
 			handler(r);
@@ -232,7 +235,7 @@ new function () {
 	function postError(error) {
 		params = JSON.stringify({
 			"sessionId": 0,
-			"userName": "chrome",
+			"userName": null,
 			"blobId": null,
 			"date": new Date().toJSON(),
 			"language": "javascript",
