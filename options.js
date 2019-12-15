@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 	var optionsIds = [
 		'showIcon',
 		'showPopup',
@@ -18,42 +18,42 @@ document.addEventListener('DOMContentLoaded', function() {
 		'popupMaxHeight'
 	];
 
-	for(var i in optionsIds) {
+	for (var i in optionsIds) {
 		var option = optionsIds[i];
 		var value = localStorage[option];
 		var input = document.getElementById(option);
 
-		if(input.type == 'checkbox') {
-			if(value) {
+		if (input.type == 'checkbox') {
+			if (value) {
 				input.checked = true;
 			}
-			input.onchange = (function(option) {
-				return function() {
+			input.onchange = (function (option) {
+				return function () {
 					localStorage[option] = this.checked ? 1 : '';
 				}
 			})(option);
 		}
 		else {
 			input.value = value;
-			input.onkeyup = (function(option) {
-				return function() {
+			input.onkeyup = (function (option) {
+				return function () {
 					localStorage[option] = this.value;
 				}
 			})(option);
 		}
 	}
 
-	document.getElementById('close').onclick = function() {
+	document.getElementById('close').onclick = function () {
 		closePopup();
 	};
 
-	if(localStorage['jscrNotified'] || localStorage['isRecommended']) {
+	if (localStorage['jscrNotified'] || localStorage['isRecommended']) {
 		document.getElementById('recommendation').remove();
 	}
 	else {
 		var linksIds = ['openRecommendation', 'hideRecommendation'];
-		for(var i in linksIds) {
-			document.getElementById(linksIds[i]).onclick = function() {
+		for (var i in linksIds) {
+			document.getElementById(linksIds[i]).onclick = function () {
 				localStorage['isRecommended'] = 3;
 				closePopup();
 				return this.id == 'openRecommendation';
