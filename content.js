@@ -195,15 +195,7 @@ new function () {
 				`%c🐛 ${ecResponse.length} Error Central results for '${error.text}'`,
 				'color: #fc212e; background-color: #fff0f0');
 			console.table(ecResponse);
-			// for (const i of ecResponse.slice(0, 10)) {
-			// 	// TODO: Do some analysis; here or on server. Who's getting the error?
-			// 	// When? Maybe do a sparkline:
-			// 	// https://rosettacode.org/wiki/Sparkline_in_unicode#JavaScript
-			// 	console.log(`${i.userName} ${i.count} ${i.latest} ${i.days_ago}`)
-			// }
-			// if (ecResponse.length > 10) {
-			// 	console.log(`${ecResponse.length - 10} more...`);
-			// }
+
 			console.groupEnd()
 		}
 		let r = window.localStorage.getItem(`ec:${error.text}`)
