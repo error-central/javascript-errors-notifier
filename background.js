@@ -1,4 +1,18 @@
-﻿function htmlentities(str) {
+﻿var userEmail = null;
+var userId = null;
+
+// Not working. Maybe: https://stackoverflow.com/a/51680395
+// chrome.identity.getProfileUserInfo(function (userInfo) {
+// 	debugger;
+// 	console.log(userInfo);
+// 	userEmail = userInfo.email;
+// 	userId = userInfo.id;
+// 	/* Use userInfo.email, or better (for privacy) userInfo.id
+// 		 They will be empty if user is not signed in in Chrome */
+// });
+
+
+function htmlentities(str) {
 	var div = document.createElement('div');
 	div.appendChild(document.createTextNode(str));
 	return div.innerHTML;
@@ -20,10 +34,10 @@ function initDefaultOptions() {
 		popupMaxWidth: 70,
 		popupMaxHeight: 40
 	};
-	for(var option in optionsValues) {
-		if(typeof localStorage[option] == 'undefined') {
+	for (var option in optionsValues) {
+		if (typeof localStorage[option] == 'undefined') {
 			var value = optionsValues[option];
-			localStorage[option] = typeof(value) == 'boolean' ? (value ? 1 : '') : value;
+			localStorage[option] = typeof (value) == 'boolean' ? (value ? 1 : '') : value;
 		}
 	}
 }
@@ -34,14 +48,14 @@ var ignoredUrlsHashes = {};
 var ignoredUrlsLimit = 100;
 
 function isUrlIgnoredByType(url) {
-	if(!url.indexOf('chrome-extension://')) { // ignore Google Chrome extensions 404 errors
+	if (!url.indexOf('chrome-extension://')) { // ignore Google Chrome extensions 404 errors
 		return true;
 	}
 	var ext = url.split('.').pop().split(/\#|\?/)[0].toLowerCase();
-	if(ext == 'js') {
+	if (ext == 'js') {
 		return localStorage['ignore404js'];
 	}
-	if(ext == 'css') {
+	if (ext == 'css') {
 		return localStorage['ignore404css'];
 	}
 	return localStorage['ignore404others'];
@@ -51,27 +65,27 @@ function getIgnoredUrlHash(url) {
 	return url.replace(/\d+/g, '');
 }
 
-chrome.webRequest.onErrorOccurred.addListener(function(e) {
-	if((localStorage['ignoreBlockedByClient'] && e.error == 'net::ERR_BLOCKED_BY_CLIENT') ||
+chrome.webRequest.onErrorOccurred.addListener(function (e) {
+	if ((localStorage['ignoreBlockedByClient'] && e.error == 'net::ERR_BLOCKED_BY_CLIENT') ||
 		(localStorage['ignoreConnectionRefused'] && e.error == 'net::ERR_CONNECTION_REFUSED')) {
 		var url = getIgnoredUrlHash(e.url);
-		if(!isUrlIgnoredByType(url)) {
-			if(ignoredUrlsHashes[url]) { // move url in the end of list
+		if (!isUrlIgnoredByType(url)) {
+			if (ignoredUrlsHashes[url]) { // move url in the end of list
 				delete ignoredUrlsHashes[url];
 			}
 			ignoredUrlsHashes[url] = true;
 			var ignoredUrlsArray = Object.keys(ignoredUrlsHashes);
-			if(ignoredUrlsArray.length > ignoredUrlsLimit) {
+			if (ignoredUrlsArray.length > ignoredUrlsLimit) {
 				delete ignoredUrlsHashes[ignoredUrlsArray[0]];
 			}
 		}
 	}
-}, {urls: ["<all_urls>"]});
+}, { urls: ["<all_urls>"] });
 
 function handleInitRequest(data, sender, sendResponse) {
 	var tabHost = getBaseHostByUrl(data.url);
 	chrome.tabs.get(sender.tab.id, function callback() { // mute closed tab error
-		if(chrome.runtime.lastError) {
+		if (chrome.runtime.lastError) {
 			return;
 		}
 		chrome.pageAction.setTitle({
@@ -99,14 +113,14 @@ function handleErrorsRequest(data, sender, sendResponse) {
 	var tabHost = getBaseHostByUrl(data.url);
 	var tabBaseUrl = (/^([\w-]+:\/\/[^\/?]+)/.exec(data.url) || [null, null])[1];
 
-	for(var i in data.errors) {
+	for (var i in data.errors) {
 		var error = data.errors[i];
 		var errorHost = getBaseHostByUrl(error.url);
-		if(localStorage['ignoreExternal'] && errorHost != tabHost) {
+		if (localStorage['ignoreExternal'] && errorHost != tabHost) {
 			continue;
 		}
-		if(error.is404) {
-			if(ignoredUrlsHashes[getIgnoredUrlHash(error.url)] || isUrlIgnoredByType(error.url)) {
+		if (error.is404) {
+			if (ignoredUrlsHashes[getIgnoredUrlHash(error.url)] || isUrlIgnoredByType(error.url)) {
 				delete data.errors[i];
 				continue;
 			}
@@ -124,30 +138,30 @@ function handleErrorsRequest(data, sender, sendResponse) {
 			var m = new RegExp('^(\\w+):\s*(.+)').exec(error.text);
 			error.type = m ? m[1] : 'Uncaught Error';
 
-			if(localStorage['showColumn'] && error.line && error.col) {
+			if (localStorage['showColumn'] && error.line && error.col) {
 				error.line = error.line + ':' + error.col;
 			}
 
 			var lines;
-			if(localStorage['showTrace'] && error.stack && (lines = error.stack.replace(/\n\s*at\s+/g, '\n').split('\n')).length > 2) {
+			if (localStorage['showTrace'] && error.stack && (lines = error.stack.replace(/\n\s*at\s+/g, '\n').split('\n')).length > 2) {
 				lines.shift();
-				for(var ii in lines) {
+				for (var ii in lines) {
 					var urlMatch = /^(.*?)\(?(([\w-]+):\/\/.*?)(\)|$)/.exec(lines[ii]);
 					var url = urlMatch ? urlMatch[2] : null;
 					var method = urlMatch ? urlMatch[1].trim() : lines[ii];
 					var lineMatch = url ? (localStorage['showColumn'] ? /^(.*?):([\d:]+)$/ : /^(.*?):(\d+)(:\d+)?$/).exec(url) : null;
 					var line = lineMatch ? lineMatch[2] : null;
 					url = lineMatch ? lineMatch[1] : url;
-					if(!url && method == 'Error (native)') {
+					if (!url && method == 'Error (native)') {
 						continue;
 					}
 					errorHtml += '<br/>&nbsp;';
-					if(url) {
+					if (url) {
 						errorHtml += localStorage['linkViewSource']
 							? ('<a href="view-source:' + url + (line ? '#' + line : '') + '" target="_blank">' + url + (line ? ':' + line : '') + '</a>')
 							: (url + (line ? ':' + line : ''));
 					}
-					if(method) {
+					if (method) {
 						errorHtml += ' ' + method + '()';
 					}
 				}
@@ -163,12 +177,12 @@ function handleErrorsRequest(data, sender, sendResponse) {
 		}
 	}
 
-	if(!popupErrors.length) {
+	if (!popupErrors.length) {
 		return;
 	}
 
 	chrome.tabs.get(sender.tab.id, function callback() { // mute closed tab error
-		if(chrome.runtime.lastError) {
+		if (chrome.runtime.lastError) {
 			return;
 		}
 
@@ -187,9 +201,9 @@ function handleErrorsRequest(data, sender, sendResponse) {
 
 		var errorsHtml = popupErrors.join('<br/><br/>');
 
-		if(localStorage['relativeErrorUrl'] && tabBaseUrl) {
+		if (localStorage['relativeErrorUrl'] && tabBaseUrl) {
 			errorsHtml = errorsHtml.split(tabBaseUrl + '/').join('/').split(tabBaseUrl).join('/');
-			if(localStorage['linkViewSource']) {
+			if (localStorage['linkViewSource']) {
 				errorsHtml = errorsHtml.split('href="view-source:/').join('href="view-source:' + tabBaseUrl + '/');
 			}
 		}
@@ -207,11 +221,11 @@ function handleErrorsRequest(data, sender, sendResponse) {
 	});
 }
 
-chrome.runtime.onMessage.addListener(function(data, sender, sendResponse) {
-	if(data._initPage) {
+chrome.runtime.onMessage.addListener(function (data, sender, sendResponse) {
+	if (data._initPage) {
 		handleInitRequest(data, sender, sendResponse);
 	}
-	else if(data._errors) {
+	else if (data._errors) {
 		handleErrorsRequest(data, sender, sendResponse);
 	}
 	return true;
