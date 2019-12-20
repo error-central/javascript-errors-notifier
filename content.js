@@ -91,45 +91,26 @@ new function () {
 	 * @param {*} error
 	 */
 	function searchSo(error) {
-		const handler = (r) => {
-			soResponse = JSON.parse(r)
-			if (soResponse.items.length == 0) {
-				return;
+		return new Promise((resolve, reject) => {
+			let r = window.localStorage.getItem(`so:${error.text}`);
+			if (r && useCache) {
+				// Cache hit
+				// console.info('SO cache hit')
+				resolve(r);
 			}
-			// Format SO
-			console.groupCollapsed(
-				`%c🐛 ${soResponse.items.length} Stack Overflow results for '${error.text}'`,
-				'color: #fc212e; background-color: #fff0f0')
-			for (const i of soResponse.items.slice(0, 10)) {
-				console.groupCollapsed(
-					`%c${i.title} (${i.answer_count} answers)\n${i.link}`,
-					'color: green; font-size: 12px; font-family: Arial,"Helvetica Neue",Helvetica,sans-serif')
-				console.log(i.body)
-				console.groupEnd()
+			else {
+				// No cache hit
+				const soQueryUrl = `https://api.stackexchange.com/2.2/search/advanced?order=desc&sort=relevance&answers=1&filter=withbody&site=stackoverflow&q=${encodeURIComponent(error.text)}`;
+				let soReq = new XMLHttpRequest();
+				soReq.open('GET', soQueryUrl);
+				soReq.onload = () => {
+					window.localStorage.setItem( // Cache
+						`so:${error.text}`, soReq.responseText);
+					resolve(soResponse);
+				};
+				soReq.send();
 			}
-			if (soResponse.items.length > 10) {
-				console.log(`${soResponse.items.length - 10} more...`);
-			}
-			console.groupEnd()
-		};
-		let r = window.localStorage.getItem(`so:${error.text}`)
-		if (r && useCache) {
-			// Cache hit
-			// console.info('SO cache hit')
-			handler(r)
-		}
-		else {
-			// No cache hit
-			const soQueryUrl = `https://api.stackexchange.com/2.2/search/advanced?order=desc&sort=relevance&answers=1&filter=withbody&site=stackoverflow&q=${encodeURIComponent(error.text)}`;
-			let soReq = new XMLHttpRequest();
-			soReq.open('GET', soQueryUrl);
-			soReq.onload = () => {
-				window.localStorage.setItem( // Cache
-					`so:${error.text}`, soReq.responseText);
-				handler(soResponse);
-			};
-			soReq.send();
-		}
+		});
 	}
 
 	/**
@@ -137,88 +118,119 @@ new function () {
 	 * @param {*} error
 	 */
 	function searchGithub(error) {
-		const repo = `error-central/error-central`; // Hard-coded for now
-		const handler = (r) => {
-			let githubResponse = JSON.parse(r)
-			if (githubResponse.items.length == 0) {
-				return;
+		const repo = window.localStorage.getItem('repo');
+		return new Promise((resolve, reject) => {
+
+			let r = window.localStorage.getItem(`github:${error.text}`);
+			if (r && useCache) {
+				// Cache hit
+				// console.info('github cache hit')
+				resolve(r);
 			}
-			// Format Github
-			console.groupCollapsed(
-				`%c🐛 ${githubResponse.items.length} Github results for '${error.text}'`,
-				'color: #fc212e; background-color: #fff0f0')
-			for (const i of githubResponse.items.slice(0, 10)) {
-				console.groupCollapsed(
-					`%c${i.title}\n${i.html_url} `,
-					'color: green; font-size: 10px')
-				console.log(i.body)
-				console.groupEnd()
+			else {
+				// No cache hit, do it
+				const githubQueryUrl = `https://api.github.com/search/issues?sort=updated-desc&q=type:issue+repo:${repo}+${encodeURIComponent(error.text)}`;
+				let githubReq = new XMLHttpRequest();
+				githubReq.open('GET', githubQueryUrl);
+				githubReq.onload = () => {
+					window.localStorage.setItem( // Cache
+						`github:${error.text}`,
+						githubReq.responseText);
+					resolve(githubReq.responseText);
+				};
+				githubReq.send();
 			}
-			if (githubResponse.items.length > 10) {
-				console.log(`${githubResponse.items.length - 10} more...`);
-			}
-			console.groupEnd()
-		}
-		let r = window.localStorage.getItem(`github:${error.text}`)
-		if (r && useCache) {
-			// Cache hit
-			// console.info('github cache hit')
-			handler(r);
-		}
-		else {
-			// No cache hit, do it
-			const githubQueryUrl = `https://api.github.com/search/issues?sort=updated-desc&q=type:issue+repo:${repo}+${encodeURIComponent(error.text)}`;
-			let githubReq = new XMLHttpRequest();
-			githubReq.open('GET', githubQueryUrl);
-			githubReq.onload = () => {
-				window.localStorage.setItem( // Cache
-					`github:${error.text}`,
-					githubReq.responseText);
-				handler(githubReq.responseText);
-			};
-			githubReq.send();
-		}
+		});
 	}
 
 	/**
-	 * Search Github Issues
-	 * @param {*} error
-	 */
+ * Search Error Central for matches
+ * @param {*} error
+ */
 	function searchEc(error) {
-		const handler = (r) => {
-			let ecResponse = JSON.parse(r)
-			if (ecResponse.length == 0) {
-				return;
+		return new Promise((resolve, reject) => {
+			let r = window.localStorage.getItem(`ec:${error.text}`);
+			if (false && r && useCache) {
+				// Cache hit
+				console.info('ec cache hit');
+				resolve(r);
 			}
-			// Format
-			console.groupCollapsed(
-				`%c🐛 ${ecResponse.length} Error Central results for '${error.text}'`,
-				'color: #fc212e; background-color: #fff0f0');
-			console.table(ecResponse);
-
-			console.groupEnd()
-		}
-		let r = window.localStorage.getItem(`ec:${error.text}`)
-		// if (r && useCache) {
-		if (false && r && useCache) {
-			// Cache hit
-			console.info('ec cache hit')
-			handler(r);
-		}
-		else {
-			// No cache hit, do it
-			const ecQueryUrl = `http://wanderingstan.com/ec/ec-search.php?q=${encodeURIComponent(error.text)}`;
-			let ecReq = new XMLHttpRequest();
-			ecReq.open('GET', ecQueryUrl);
-			ecReq.onload = () => {
-				window.localStorage.setItem( // Cache
-					`ec:${error.text}`,
-					ecReq.responseText);
-				handler(ecReq.responseText);
-			};
-			ecReq.send();
-		}
+			else {
+				// No cache hit, do it
+				const ecQueryUrl = `http://wanderingstan.com/ec/ec-search.php?q=${encodeURIComponent(error.text)}`;
+				let ecReq = new XMLHttpRequest();
+				ecReq.open('GET', ecQueryUrl);
+				ecReq.onload = () => {
+					window.localStorage.setItem( // Cache
+						`ec:${error.text}`,
+						ecReq.responseText);
+					resolve(ecReq.responseText);
+				};
+				ecReq.send();
+			}
+		});
 	}
+
+
+	const soHandler = (r) => {
+		soResponse = JSON.parse(r);
+		if (soResponse.items.length == 0) {
+			return;
+		}
+		// Format SO
+		console.groupCollapsed(
+			`%c${soResponse.items.length} Stack Overflow results`,
+			'color: #fc212e; background-color: #fff0f0');
+		for (const i of soResponse.items.slice(0, 10)) {
+			console.groupCollapsed(
+				`%c${i.title} (${i.answer_count} answers)\n${i.link}`,
+				'color: green; font-size: 12px; font-family: Arial,"Helvetica Neue",Helvetica,sans-serif');
+			console.log(i.body);
+			console.groupEnd();
+		}
+		if (soResponse.items.length > 10) {
+			console.log(`${soResponse.items.length - 10} more...`);
+		}
+		console.groupEnd();
+	};
+
+	const githubHandler = (r) => {
+		let githubResponse = JSON.parse(r);
+		if (githubResponse.items.length == 0) {
+			return;
+		}
+		// Format Github
+		console.groupCollapsed(
+			`%c${githubResponse.items.length} Github results`,
+			'color: #fc212e; background-color: #fff0f0');
+		for (const i of githubResponse.items.slice(0, 10)) {
+			console.groupCollapsed(
+				`%c${i.title}\n${i.html_url} `,
+				'color: green; font-size: 10px');
+			console.log(i.body);
+			console.groupEnd();
+		}
+		if (githubResponse.items.length > 10) {
+			console.log(`${githubResponse.items.length - 10} more...`);
+		}
+		console.groupEnd();
+	};
+
+	const ecHandler = (r) => {
+		let ecResponse = JSON.parse(r);
+		if (ecResponse.length == 0) {
+			return;
+		}
+		// Format
+		console.groupCollapsed(
+			`%c${ecResponse.length} Error Central results`,
+			'color: #fc212e; background-color: #fff0f0');
+		console.table(ecResponse);
+
+		console.groupEnd();
+	};
+
+
 
 	/**
 	 * Post to our server
@@ -239,7 +251,7 @@ new function () {
 				// Error was logged
 				// console.info(`3️⃣ Got wanderingstan response X:`, ecPostReq.responseText)
 			}
-		}
+		};
 		let ecPostReq = new XMLHttpRequest();
 		ecPostReq.open('POST', 'http://wanderingstan.com/ec/ec-monitor.php', true);
 		ecPostReq.onreadystatechange = handler;
@@ -251,10 +263,20 @@ new function () {
 		const error = e.detail;
 
 		// Stan - EC
-		// console.info(`🐛 Error was caught: ${error.text}`)
-		searchSo(error);
-		searchGithub(error);
-		searchEc(error);
+		// console.info(`Error was caught: ${error.text}`)
+		const soP = searchSo(error);
+		const githubP = searchGithub(error);
+		const ecP = searchEc(error);
+		Promise.all([soP, githubP, ecP]).then(([soR, githubR, ecR]) => {
+
+			console.groupCollapsed(
+				`%c🐛 ${error.text} - Error Central results`,
+				'color: #fc212e; background-color: #fff0f0');
+			soHandler(soR);
+			githubHandler(githubR);
+			ecHandler(ecR);
+			console.groupEnd();
+		});
 		postError(error);
 
 		if (isIFrame) {
