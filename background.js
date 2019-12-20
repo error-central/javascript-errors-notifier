@@ -230,3 +230,15 @@ chrome.runtime.onMessage.addListener(function (data, sender, sendResponse) {
 	}
 	return true;
 });
+
+// Load dependencies
+window.localStorage.setItem('repo', 'error-central/error-central');
+const packageJsonUrl = `https://raw.githubusercontent.com/error-central/error-central/master/ec-monitor/package.json`;
+let req = new XMLHttpRequest();
+let dependencies;
+req.open('GET', packageJsonUrl);
+req.onload = () => {
+	repoPackage = JSON.parse(req.responseText);
+	dependencies = Object.keys(repoPackage.dependencies);
+};
+req.send();
