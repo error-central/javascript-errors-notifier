@@ -72,6 +72,7 @@ new function () {
 			if (!timer) {
 				timer = window.setTimeout(function () {
 					timer = null;
+					// Send eerrors to background extension code
 					chrome.runtime.sendMessage({
 						_errors: true,
 						errors: errors,
@@ -258,12 +259,15 @@ new function () {
 		ecPostReq.send(params);
 	}
 
-
+	/**
+	 * Handler for custom 'ErrorToExtension' message.
+	 * The various error detection methods all call this.
+	 */
 	document.addEventListener('ErrorToExtension', function (e) {
 		const error = e.detail;
 
 		// Stan - EC
-		// console.info(`Error was caught: ${error.text}`)
+		console.info(`Error was caught: ${error.text}`);
 		const soP = searchSo(error);
 		const githubP = searchGithub(error);
 		const ecP = searchEc(error);
@@ -292,6 +296,10 @@ new function () {
 
 	});
 
+	/**
+	 * Code injected on each page.
+	 * Catches all the various forms of errors that can happen.
+	 */
 	function codeToInject() {
 
 		function handleCustomError(message, stack) {
