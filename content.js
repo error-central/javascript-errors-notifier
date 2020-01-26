@@ -8,7 +8,7 @@ new function () {
 	var popup;
 	var options;
 	var isIFrame = window.top != window;
-	var useCache = true;
+	var useCache = false; // true;
 
 	function showPopup(popupUrl) {
 
@@ -107,7 +107,7 @@ new function () {
 				soReq.onload = () => {
 					window.localStorage.setItem( // Cache
 						`so:${error.text}`, soReq.responseText);
-					resolve(soResponse);
+					resolve(soReq.responseText);
 				};
 				soReq.send();
 			}
@@ -119,7 +119,11 @@ new function () {
 	 * @param {*} error
 	 */
 	function searchGithub(error) {
+		// E.g. "error-central/javascript-errors-notifier"
 		const repo = window.localStorage.getItem('repo');
+		if (!repo) {
+			return;
+		}
 		return new Promise((resolve, reject) => {
 
 			let r = window.localStorage.getItem(`github:${error.text}`);
